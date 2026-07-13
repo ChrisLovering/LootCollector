@@ -1403,12 +1403,14 @@ function Comm:OnUpdate(elapsed)
     end
     
     if #Comm.rawBuffer > 0 then
-        local tnow = time()
-        if not self._lastCachePrune or (tnow - self._lastCachePrune) >= 2 then
-            pruneCaches()
-            self._lastCachePrune = tnow
-        end
         self:_ProcessRawBuffer()
+    end
+    
+    -- Prune dedup caches periodically regardless of buffer state
+    local tnow = time()
+    if not self._lastCachePrune or (tnow - self._lastCachePrune) >= 60 then
+        pruneCaches()
+        self._lastCachePrune = tnow
     end
     
     self._processTimer = (self._processTimer or 0) + elapsed
