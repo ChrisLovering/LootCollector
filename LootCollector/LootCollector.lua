@@ -12,7 +12,7 @@ LootCollector.addonPrefix = "BBLC25AM"
 LootCollector.chatChannel = "BBLC25C"
 LootCollector.DEBUG_MODE = false
 
-LootCollector._profilerEnabled = true
+LootCollector._profilerEnabled = false
 LootCollector._profilerStats = {}
 LootCollector._normalizedNameCache = {}
 
@@ -341,15 +341,15 @@ function LootCollector:Round4(v)
 end
 
 function LootCollector:GenerateGUID(c, z, iz, i, x, y)
-    local x4 = self:Round4(x or 0)
-    local y4 = self:Round4(y or 0)
-    return tostring(c or 0) .. "-" .. tostring(z or 0) .. "-" .. tostring(iz or 0) .. "-" .. tostring(i or 0) .. "-" .. string.format("%.4f", x4) .. "-" .. string.format("%.4f", y4)
+    return string.format("%d-%d-%d-%d-%.4f-%.4f",
+        c or 0, z or 0, iz or 0, i or 0,
+        self:Round4(x or 0), self:Round4(y or 0))
 end
 
 function LootCollector:GenerateVendorGUID(vendorType, c, z, iz, x, y)
-    local x4 = self:Round4(x or 0)
-    local y4 = self:Round4(y or 0)
-    return tostring(vendorType or "V") .. "-" .. tostring(c or 0) .. "-" .. tostring(z or 0) .. "-" .. tostring(iz or 0) .. "-" .. string.format("%.4f", x4) .. "-" .. string.format("%.4f", y4)
+    return string.format("%s-%d-%d-%d-%.4f-%.4f",
+        tostring(vendorType or "V"), c or 0, z or 0, iz or 0,
+        self:Round4(x or 0), self:Round4(y or 0))
 end
 
 function LootCollector:ComputeDistance(c1, z1, x1, y1, c2, z2, x2, y2)
