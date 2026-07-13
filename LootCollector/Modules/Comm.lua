@@ -1289,9 +1289,13 @@ function Comm:processIncomingQueue()
     Core.DataHasChanged = false 
     
     local processedCount = 0
+    local queue = self._incomingMessageQueue
+    local queueLen = #queue
+    local cursor = 0
 
-    while processedCount < currentBatchSize and #self._incomingMessageQueue > 0 do
-        local entry = table.remove(self._incomingMessageQueue, 1)
+    while processedCount < currentBatchSize and cursor < queueLen do
+        cursor = cursor + 1
+        local entry = queue[cursor]
         if entry and entry.data and entry.options then
             
             local ok, err = pcall(function()
@@ -1307,6 +1311,17 @@ function Comm:processIncomingQueue()
             end
 
             processedCount = processedCount + 1
+        end
+    end
+
+    -- Compact: shift remaining entries to front
+    if cursor > 0 then
+        local remaining = queueLen - cursor
+        for i = 1, remaining do
+            queue[i] = queue[i + cursor]
+        end
+        for i = remaining + 1, queueLen do
+            queue[i] = nil
         end
     end
 
@@ -1340,8 +1355,13 @@ function Comm:OnUpdate(elapsed)
         Comm._lagRecoveryTimer = math.min(7.0, dynamicDuration)
         
         if bufferSize >= RAW_BUFFER_CAP then
-            for i = 1, math.floor(RAW_BUFFER_CAP * 0.2) do
-                table.remove(Comm.rawBuffer, 1)
+            local trimCount = math_floor(RAW_BUFFER_CAP * 0.2)
+            local remaining = bufferSize - trimCount
+            for i = 1, remaining do
+                Comm.rawBuffer[i] = Comm.rawBuffer[i + trimCount]
+            end
+            for i = remaining + 1, bufferSize do
+                Comm.rawBuffer[i] = nil
             end
         end
     elseif Comm._lagRecoveryTimer > 0 then
