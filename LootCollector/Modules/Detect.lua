@@ -522,6 +522,16 @@ function Detect:OnChatMsgLoot(_, msg)
     local qualifies = self:Qualifies(link, src)
     
     if qualifies == nil then
+        -- Guard against infinite re-scheduling if item data never arrives
+        self._retryCounters = self._retryCounters or {}
+        local retryKey = link
+        self._retryCounters[retryKey] = (self._retryCounters[retryKey] or 0) + 1
+        if self._retryCounters[retryKey] > 3 then
+            L._ddebug("Detect", "Dropped: Item data never resolved after 3 retries for " .. tostring(link))
+            self._retryCounters[retryKey] = nil
+            if pTime then L:ProfileStop("Detect:OnChatMsgLoot", pTime) end 
+            return
+        end
         L._ddebug("Detect", "Data not ready. Queueing cache request and delaying CHAT_MSG_LOOT evaluation by 1 second.")
         local itemID = tonumber(link:match("item:(%d+)"))
         if itemID then
@@ -541,6 +551,9 @@ function Detect:OnChatMsgLoot(_, msg)
         if pTime then L:ProfileStop("Detect:OnChatMsgLoot", pTime) end 
         return 
     end
+    
+    -- Clear retry counter on success
+    if self._retryCounters then self._retryCounters[link] = nil end
     
     local last = self._recent[link] or 0
     if nowTime - last < 1.0 then 
