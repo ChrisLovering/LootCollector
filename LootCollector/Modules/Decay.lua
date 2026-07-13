@@ -19,29 +19,7 @@ Decay._tombstonePurgedCount = 0
 Decay._guidsToRemove = {}
 
 local function ScheduleAfter(seconds, func)
-    if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
-        return C_Timer.After(seconds, func)
-    end
-    local f = CreateFrame("Frame")
-    local cancelled = false
-    local target = GetTime() + (tonumber(seconds) or 0)
-    f:SetScript("OnUpdate", function(self)
-        if cancelled then
-            self:SetScript("OnUpdate", nil)
-            self:Hide()
-            return
-        end
-        if GetTime() >= target then
-            self:SetScript("OnUpdate", nil)
-            self:Hide()
-            func()
-        end
-    end)
-    f:Show()
-    return {
-        Cancel = function() cancelled = true end,
-        IsCancelled = function() return cancelled end,
-    }
+    return L:ScheduleAfter(seconds, func)
 end
 
 function Decay:StartChunkedScan()

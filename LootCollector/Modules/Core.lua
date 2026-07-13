@@ -46,29 +46,7 @@ Core._purgeRemovedCount = 0
 Core._finderBlacklistCache = {}
 
 local function ScheduleAfter(seconds, func)
-    if C_Timer and C_Timer.After then
-        return C_Timer.After(seconds, func)
-    end
-    local f = CreateFrame("Frame")
-    local cancelled = false
-    local target = GetTime() + (tonumber(seconds) or 0)
-    f:SetScript("OnUpdate", function(self)
-        if cancelled then
-            self:SetScript("OnUpdate", nil)
-            self:Hide()
-            return
-        end
-        if GetTime() >= target then
-            self:SetScript("OnUpdate", nil)
-            self:Hide()
-            func()
-        end
-    end)
-    f:Show()
-    return {
-        Cancel = function() cancelled = true end,
-        IsCancelled = function() return cancelled end,
-    }
+    return L:ScheduleAfter(seconds, func)
 end
 
 local c_z_toPurge = {
