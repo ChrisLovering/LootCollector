@@ -1273,7 +1273,7 @@ local function buildOptions()
                         name = "• GitHub Sponsors",
                         order = 43,
                         func = function()
-                            OpenCopyPopup("GitHub Sponsors", "https://github.com/sponsors/mmobrain")
+                            OpenCopyPopup("GitHub Sponsors", "https://github.com/sponsors/ChrisLovering")
                         end,
                     },
                     ingame_mail_desc = {

@@ -2411,7 +2411,7 @@ function Comm:RouteIncoming(tbl, via, sender)
     if tbl.av and L.Version and compareVersions(tbl.av, L.Version) > 0 then
         if not L.notifiedNewVersion then
             L.notifiedNewVersion = true 
-            print(string.format("|cff00ff00LootCollector:|r A newer version |cffffff00%s|r is available (you have |cffff7f00%s|r). Please update!", tbl.av, L.Version))
+            print(string.format("|cff00ff00LootCollector:|r A newer version |cffffff00%s|r is available (you have |cffff7f00%s|r). Please update at |cff00ccffgithub.com/ChrisLovering/LootCollector/releases|r!", tbl.av, L.Version))
         end
 
         local twelveHours = 12 * 3600
@@ -2420,7 +2420,7 @@ function Comm:RouteIncoming(tbl, via, sender)
             
             local Toast = L:GetModule("Toast", true)
             if Toast and Toast.ShowSpecialMessage then
-                local titleText = "|cffffffffSkulltrail|r found new LC version on GitHub"
+                local titleText = "New LootCollector version available on GitHub"
                 local subtitleText = ""
                 local icon = "Interface\\Icons\\INV_Misc_Book_09"
                 

@@ -55,7 +55,7 @@
 
 ## Installation
 
-1.  Download the latest version from the [Releases](https://github.com/mmobrain/LootCollector/releases) page.
+1.  Download the latest version from the [Releases](https://github.com/ChrisLovering/LootCollector/releases) page.
 2.  Extract the ZIP file.
 3.  Copy the `LootCollector` folder into your `Interface\AddOns` directory in your World of Warcraft installation.
 4.  Restart World of Warcraft.
