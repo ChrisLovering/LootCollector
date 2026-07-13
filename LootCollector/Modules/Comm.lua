@@ -1711,6 +1711,12 @@ local function _normalizeForCore(tbl, sender, Comm)
         end
     end
     
+    -- Cap untrusted string fields from network to prevent DB bloat
+    local safeAv = type(tbl.av) == "string" and tbl.av:sub(1, 16) or tbl.av
+    local safeFp = type(historicalFp) == "string" and historicalFp:sub(1, 32) or historicalFp
+    local safeMid = type(tbl.mid) == "string" and tbl.mid:sub(1, 64) or tbl.mid
+    local safeCl = type(tbl.cl) == "string" and tbl.cl:sub(1, 32) or tbl.cl
+
     local r = {
         v = tbl.v,
         op = tbl.op,
@@ -1723,14 +1729,14 @@ local function _normalizeForCore(tbl, sender, Comm)
         xy = { x = roundPrec(tbl.x or 0), y = roundPrec(tbl.y or 0) },
         t0 = tonumber(tbl.t) or now(),
         ls = tonumber(tbl.t) or now(),
-        av = tbl.av,
-        mid = tbl.mid,
+        av = safeAv,
+        mid = safeMid,
         seq = tbl.seq or 0,
         sflag = tbl.s or 0,
         dt = tbl.dt, it = tbl.it, ist = tbl.ist,
-        cl = tbl.cl,
+        cl = safeCl,
         src = tbl.src, 
-        fp = historicalFp,
+        fp = safeFp,
         sender = sender,
     }
     
@@ -1799,10 +1805,15 @@ function Comm:OnCommReceived(prefix, message, distribution, sender)
         return 
     end        
     if #Comm.rawBuffer >= RAW_BUFFER_CAP then
-        table.remove(Comm.rawBuffer, 1)
+        -- Drop oldest entry by shifting (single item, acceptable)
+        local bufLen = #Comm.rawBuffer
+        for i = 1, bufLen - 1 do
+            Comm.rawBuffer[i] = Comm.rawBuffer[i + 1]
+        end
+        Comm.rawBuffer[bufLen] = nil
     end
     
-    table.insert(Comm.rawBuffer, { type="ACE", msg=message, dist=distribution, sender=sender })
+    Comm.rawBuffer[#Comm.rawBuffer + 1] = { type="ACE", msg=message, dist=distribution, sender=sender }
     
     if pTime then L:ProfileStop("Comm:OnCommReceived", pTime) end 
 end
@@ -1814,9 +1825,14 @@ function Comm:_ProcessRawBuffer()
     local safetyLimit = (Comm._lagRecoveryTimer > 0) and 6 or 50
     local budget = InCombatLockdown() and 1.0 or RAW_PROCESS_BUDGET_MS
 
+    local buffer = Comm.rawBuffer
+    local bufLen = #buffer
     local processed = 0
-    while #Comm.rawBuffer > 0 and processed < safetyLimit do
-        local entry = table.remove(Comm.rawBuffer, 1)
+    local cursor = 0
+    
+    while cursor < bufLen and processed < safetyLimit do
+        cursor = cursor + 1
+        local entry = buffer[cursor]
         
         if entry.type == "CHAT" then
             self:_ProcessChatMsg(entry.msg, entry.sender, entry.channel)
@@ -1828,6 +1844,17 @@ function Comm:_ProcessRawBuffer()
         
         if (debugprofilestop() - startTime) >= budget then
             break
+        end
+    end
+    
+    -- Compact: shift remaining to front
+    if cursor > 0 then
+        local remaining = bufLen - cursor
+        for i = 1, remaining do
+            buffer[i] = buffer[i + cursor]
+        end
+        for i = remaining + 1, bufLen do
+            buffer[i] = nil
         end
     end
     
