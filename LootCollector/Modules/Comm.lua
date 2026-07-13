@@ -1352,7 +1352,7 @@ function Comm:OnUpdate(elapsed)
     if elapsed > 0.5 then
         local bufferSize = #Comm.rawBuffer
         local dynamicDuration = 1.0 + (bufferSize / 6 * 0.5)
-        Comm._lagRecoveryTimer = math.min(7.0, dynamicDuration)
+        Comm._lagRecoveryTimer = math_min(7.0, dynamicDuration)
         
         if bufferSize >= RAW_BUFFER_CAP then
             local trimCount = math_floor(RAW_BUFFER_CAP * 0.2)
@@ -1368,7 +1368,7 @@ function Comm:OnUpdate(elapsed)
         Comm._lagRecoveryTimer = Comm._lagRecoveryTimer - elapsed
     end
     
-    elapsed = math.min(elapsed, 0.1)
+    elapsed = math_min(elapsed, 0.1)
 
     if self._delayQueue and #self._delayQueue > 0 then
         local tnow = time()
@@ -1778,7 +1778,12 @@ local function _onChatMsgChannel(_, _, msg, sender, _, _, _, _, _, _, channelNam
         return 
     end
     
-    table.insert(Comm.rawBuffer, { type="CHAT", msg=msg, sender=sender, channel=channelName })
+    if #Comm.rawBuffer >= RAW_BUFFER_CAP then
+        if pTime then L:ProfileStop("Comm:_onChatMsgChannel", pTime) end
+        return
+    end
+    
+    Comm.rawBuffer[#Comm.rawBuffer + 1] = { type="CHAT", msg=msg, sender=sender, channel=channelName }
     
     if pTime then L:ProfileStop("Comm:_onChatMsgChannel", pTime) end 
 end
