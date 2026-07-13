@@ -11,7 +11,7 @@ LootCollector is a **World of Warcraft 3.3.5a (WotLK) Ace3 addon** for the Proje
 
 ## Build & Run
 
-No build system or test framework exists. Deployment is manual copy to `Interface/AddOns/`. The `.toc` file defines load order — respect it when adding new files.
+No build system or test framework exists. Deployment is via `deploy.ps1` which copies the three addon folders to the Ascension install path. The `.toc` file defines load order — respect it when adding new files.
 
 ## Architecture
 
@@ -68,14 +68,16 @@ end
 |---|---|
 | Addon alias | `local L = LootCollector` — always the first line of every module |
 | Legacy guard | Check `if L.LEGACY_MODE_ACTIVE then return end` in all lifecycle hooks |
-| Performance upvalues | Localize globals: `local floor = math.floor; local pairs = pairs` |
-| Profiler wrapping | `local pTime = L:ProfileStart()` ... `L:ProfileStop("FuncName", pTime)` |
+| Performance upvalues | Localize globals: `local floor = math.floor; local pairs = pairs` — especially in Comm.lua and any OnUpdate handler |
+| Profiler wrapping | `local pTime = L:ProfileStart()` ... `L:ProfileStop("FuncName", pTime)` — profiler is **off by default** (`_profilerEnabled = false`) |
 | Debug logging | `L._debug("ModuleName", msg)` — gated by `db.profile.debugMode` |
 | Coordinate precision | Always 4 decimal places via `L:Round4(v)` — GUID matching depends on this |
-| GUID format | `"continent-zone-innerzone-itemID-x.xxxx-y.xxxx"` via `L:GenerateGUID()` |
-| Deferred scheduling | `ScheduleAfter(seconds, func)` — C_Timer.After with OnUpdate fallback |
+| GUID format | `"continent-zone-innerzone-itemID-x.xxxx-y.xxxx"` via `L:GenerateGUID()` (single `string.format` call) |
+| Deferred scheduling | `L:ScheduleAfter(seconds, func)` — canonical implementation on the addon object; do NOT define local copies |
 | Frame-budget loops | Long iterations must check `debugprofilestop()` vs `SCAN_BUDGET_MS` per tick |
 | Silent module access | Always pass `true` to `L:GetModule("X", true)` to avoid errors from load-order |
+| Queue processing | Use cursor+compact pattern instead of `table.remove(t, 1)` in loops — avoids O(n²) |
+| Network string safety | Truncate untrusted string fields from network (fp, av, mid, cl) to prevent DB bloat |
 
 ## Communication
 

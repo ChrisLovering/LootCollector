@@ -1,8 +1,5 @@
 # LootCollector
 
-> [!IMPORTANT]
-> ** Active development and support for LootCollector has ended. The repository is now archived and will no longer receive updates. Thank you to everyone who helped build and test this Proof of Concept (POC) project.**
-
 ---
 
 ## How LootCollector Speeds Up Your Character Progression
