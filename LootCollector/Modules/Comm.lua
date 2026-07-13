@@ -6,6 +6,32 @@ local AceSerializer = LibStub("AceSerializer-3.0")
 local LibDeflate = LibStub("LibDeflate", true)
 local XXH_Lua_Lib = _G.XXH_Lua_Lib
 
+-- Performance upvalues
+local time = time
+local type = type
+local pairs = pairs
+local ipairs = ipairs
+local tonumber = tonumber
+local tostring = tostring
+local pcall = pcall
+local next = next
+local wipe = wipe
+local math_floor = math.floor
+local math_min = math.min
+local math_max = math.max
+local math_random = math.random
+local string_format = string.format
+local string_len = string.len
+local string_sub = string.sub
+local string_find = string.find
+local string_lower = string.lower
+local string_upper = string.upper
+local string_match = string.match
+local string_gmatch = string.gmatch
+local table_insert = table.insert
+local table_remove = table.remove
+local table_concat = table.concat
+
 local RAW_BUFFER_CAP = 120
 Comm._lagRecoveryTimer = 0
 Comm._minCompatibleVersion = nil
@@ -102,27 +128,26 @@ local function GetLast3AsciiSum(name)
     return sum
 end
 
+local function parseVersion(v)
+    if type(v) ~= "string" then return 0, 0, 0 end
+    
+    local versionString = string_match(v, "(%d+%.%d+%.?%d*)")
+    if not versionString then
+        return 0, 0, 0 
+    end
+
+    local parts = {}
+    for part in string_gmatch(versionString, "([^%.]+)") do
+        parts[#parts + 1] = tonumber(part) or 0
+    end
+    
+    return parts[1] or 0, parts[2] or 0, parts[3] or 0
+end
+
 local function compareVersions(v1, v2)
     if v1 == v2 then return 0 end
     if not v1 or v1 == "" then return -1 end
     if not v2 or v2 == "" then return 1 end
-
-    local function parseVersion(v)
-        if type(v) ~= "string" then return 0, 0, 0 end
-        
-        local versionString = v:match("(%d+%.%d+%.?%d*)")
-        if not versionString then
-            return 0, 0, 0 
-        end
-
-        local parts = {}
-        
-        for part in versionString:gmatch("([^%.]+)") do
-            table.insert(parts, tonumber(part) or 0)
-        end
-        
-        return parts[1] or 0, parts[2] or 0, parts[3] or 0
-    end
 
     local major1, minor1, patch1 = parseVersion(v1)
     local major2, minor2, patch2 = parseVersion(v2)
@@ -558,24 +583,20 @@ function Comm:LeavePublicChannel()
     self.channelId = 0
 end
 
+-- Pre-built reverse lookup for valid MS source values (built lazily)
+local _validMSSources = nil
 local function IsValidMYSTICSCROLLSource(src)
-    local pTime = L.ProfileStart and L:ProfileStart() 
-
-    local Constants = L:GetModule("Constants", true)
-    if not Constants or not Constants.AcceptedLootSrcMS then 
-        if pTime then L:ProfileStop("Comm:IsValidMYSTICSCROLLSource", pTime) end
-        return false 
-    end
-    
-    for k, v in pairs(Constants.AcceptedLootSrcMS) do
-        if src == v then 
-            if pTime then L:ProfileStop("Comm:IsValidMYSTICSCROLLSource", pTime) end
-            return true 
+    if not _validMSSources then
+        local Constants = L:GetModule("Constants", true)
+        if not Constants or not Constants.AcceptedLootSrcMS then
+            return false
+        end
+        _validMSSources = {}
+        for _, v in pairs(Constants.AcceptedLootSrcMS) do
+            _validMSSources[v] = true
         end
     end
-    
-    if pTime then L:ProfileStop("Comm:IsValidMYSTICSCROLLSource", pTime) end 
-    return false
+    return _validMSSources[src] == true
 end
 
 function Comm:buildWireV5DISC(discovery)
