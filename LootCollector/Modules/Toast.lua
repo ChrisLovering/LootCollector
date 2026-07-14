@@ -70,6 +70,7 @@ local lastScheduledAt = 0
 local overflowActive = false
 local dispatcher
 local bottomMostToast
+local renderToast
 
 local ticker = {
     frame = nil,
@@ -625,7 +626,7 @@ function Toast:_layoutStacks()
     if pTime then L:ProfileStop("Toast:_layoutStacks", pTime) end 
 end
 
-local function renderToast(d, options)
+renderToast = function(d, options)
     local pTime = L.ProfileStart and L:ProfileStart() 
 
 	options = options or {}
