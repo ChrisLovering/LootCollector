@@ -270,7 +270,11 @@ local function trackInvalidSender(sender, reason, payload)
             end
             payloadStr = "{" .. table.concat(parts, ", ") .. "}"
         end
-        print(string.format("|cffff00ff[LC-Invalid]|r Sender: %s (v%s) | Reason: %s | Payload: %s", tostring(name), tostring(av), tostring(reason), payloadStr))
+        local trackCount = (track.count or 0) + 1
+        print(string.format("|cffff00ff[LC-Invalid]|r #%d Sender: %s (v%s) | Reason: %s | Item: %s | Zone: c%s/z%s/iz%s | Coords: %s,%s | Payload: %s",
+            trackCount, tostring(name), tostring(av), tostring(reason),
+            tostring(item), tostring(continent), tostring(zone), tostring(izVal),
+            tostring(xVal), tostring(yVal), payloadStr))
     end
     
     track.count = (track.count or 0) + 1
@@ -288,7 +292,7 @@ local function trackInvalidSender(sender, reason, payload)
     
     if track.count == 3 and not Comm.sessionIgnoredSenders[name] then
         Comm.sessionIgnoredSenders[name] = true
-        print(string.format("|cffff7f00[LootCollector]|r %s (v%s) sent 3 invalid discoveries. Suppressing messages for this session.", name, av))
+        print(string.format("|cffff7f00[LootCollector]|r %s (v%s) sent 3 invalid discoveries. Suppressing messages for this session. Last reason: %s", name, av, tostring(reason)))
     end
     
     
@@ -1599,20 +1603,20 @@ local function _lc_validateNormalized(tbl)
         for _, k in ipairs(req) do
             if tbl[k] == nil then
                 if pTime then L:ProfileStop("Comm:_lc_validateNormalized", pTime) end
-                return nil, "missing_" .. k
+                return nil, "missing_" .. k .. " (op=" .. tostring(tbl.op) .. ", v=" .. tostring(tbl.v) .. ")"
             end
         end
 
         local c = tonumber(tbl.c)
         if not c or c < 0 or c > 4 then
             if pTime then L:ProfileStop("Comm:_lc_validateNormalized", pTime) end
-            return nil, "invalid_continent"
+            return nil, "invalid_continent (c=" .. tostring(tbl.c) .. ", expected 0-4)"
         end
 
         local z = tonumber(tbl.z)
         if not z or z < 0 or z > 9999 then
             if pTime then L:ProfileStop("Comm:_lc_validateNormalized", pTime) end
-            return nil, "invalid_zone"
+            return nil, "invalid_zone (z=" .. tostring(tbl.z) .. ", expected 0-9999)"
         end
 
         
@@ -1621,14 +1625,14 @@ local function _lc_validateNormalized(tbl)
             local mapData = ZoneList.MapDataByID[z]
             if mapData and mapData.continentID ~= c and z <= 2000 then
                 if pTime then L:ProfileStop("Comm:_lc_validateNormalized", pTime) end
-                return nil, "invalid_continent_zone_combo"
+                return nil, "invalid_continent_zone_combo (c=" .. tostring(c) .. ", z=" .. tostring(z) .. ", expected_c=" .. tostring(mapData.continentID) .. ", zone_name=" .. tostring(mapData.name or "?") .. ")"
             end
         end
 
         local x, y = tonumber(tbl.x), tonumber(tbl.y)
         if not x or not y or x < 0 or x > 1 or y < 0 or y > 1 then
             if pTime then L:ProfileStop("Comm:_lc_validateNormalized", pTime) end
-            return nil, "invalid_coords"
+            return nil, "invalid_coords (x=" .. tostring(tbl.x) .. ", y=" .. tostring(tbl.y) .. ", expected 0-1)"
         end
 
         tbl.iz = tonumber(tbl.iz) or 0
@@ -1647,7 +1651,14 @@ local function _lc_validateNormalized(tbl)
     if tbl.v == 1 then
         if not tbl.op or tbl.i == nil or tbl.z == nil or tbl.x == nil or tbl.y == nil or tbl.t == nil then
             if pTime then L:ProfileStop("Comm:_lc_validateNormalized", pTime) end
-            return nil, "missing_fields"
+            local missing = {}
+            if not tbl.op then table.insert(missing, "op") end
+            if tbl.i == nil then table.insert(missing, "i") end
+            if tbl.z == nil then table.insert(missing, "z") end
+            if tbl.x == nil then table.insert(missing, "x") end
+            if tbl.y == nil then table.insert(missing, "y") end
+            if tbl.t == nil then table.insert(missing, "t") end
+            return nil, "missing_fields (" .. table.concat(missing, ",") .. ")"
         end
 
         tbl.c = tonumber(tbl.c) or 0
@@ -1660,7 +1671,7 @@ local function _lc_validateNormalized(tbl)
     end
 
     if pTime then L:ProfileStop("Comm:_lc_validateNormalized", pTime) end 
-    return nil, "unknown_version"
+    return nil, "unknown_version (v=" .. tostring(tbl.v) .. ")"
 end
 
 local function _normalizeForCore(tbl, sender, Comm)
@@ -1675,13 +1686,13 @@ local function _normalizeForCore(tbl, sender, Comm)
     if tbl.op == "DISC" then
         if (tbl.s or 0) == 0 then
             if tbl.fp and tbl.fp ~= "" and tbl.fp ~= sender then
-                trackInvalidSender(sender, "disc_fp_mismatch", tbl)
+                trackInvalidSender(sender, "disc_fp_mismatch (fp=" .. tostring(tbl.fp) .. ", sender=" .. tostring(sender) .. ")", tbl)
                 if pTime then L:ProfileStop("Comm:_normalizeForCore", pTime) end
                 return nil
             end
         else
             if tbl.fp and tbl.fp ~= "" then
-                trackInvalidSender(sender, "disc_anon_fp_not_empty", tbl)
+                trackInvalidSender(sender, "disc_anon_fp_not_empty (fp=" .. tostring(tbl.fp) .. ", s=" .. tostring(tbl.s) .. ")", tbl)
                 if pTime then L:ProfileStop("Comm:_normalizeForCore", pTime) end
                 return nil
             end
@@ -1689,7 +1700,7 @@ local function _normalizeForCore(tbl, sender, Comm)
     elseif tbl.op == "CONF" then
         if (tbl.s or 0) == 1 then
             if tbl.fp and tbl.fp ~= "" then
-                trackInvalidSender(sender, "conf_anon_fp_not_empty", tbl)
+                trackInvalidSender(sender, "conf_anon_fp_not_empty (fp=" .. tostring(tbl.fp) .. ", s=" .. tostring(tbl.s) .. ")", tbl)
                 if pTime then L:ProfileStop("Comm:_normalizeForCore", pTime) end
                 return nil
             end
