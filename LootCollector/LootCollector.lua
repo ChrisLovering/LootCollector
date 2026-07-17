@@ -272,6 +272,13 @@ local dbDefaults = {
 
 LootCollector.shadingModeActive = false
 
+local function _lcErrorHandler(msg)
+    local handler = geterrorhandler()
+    if handler then
+        handler(msg)
+    end
+end
+
 function LootCollector._debug(module, message)
     local debugMode = false
     if LootCollector.db and LootCollector.db.profile then
@@ -281,31 +288,31 @@ function LootCollector._debug(module, message)
     end
 
     if debugMode then
-        print(string.format("|cffffff00[LC-Debug|cffff8c00][%s]|r %s", tostring(module), tostring(message)))
+        _lcErrorHandler(string.format("[LC-Debug][%s] %s", tostring(module), tostring(message)))
     end
 end
 
 function LootCollector._mdebug(module, message)
     if LootCollector.db and LootCollector.db.profile and LootCollector.db.profile.mdebugMode then
-        print(string.format("|cffffff00[LC-MapDebug|cffff8c00][%s]|r %s", tostring(module), tostring(message)))
+        _lcErrorHandler(string.format("[LC-MapDebug][%s] %s", tostring(module), tostring(message)))
     end
 end
 
 function LootCollector._idebug(module, message)
     if LootCollector.db and LootCollector.db.profile and LootCollector.db.profile.idebugMode then
-        print(string.format("|cffffff00[LC-Debug|cffff8c00][%s]|r %s", tostring(module), tostring(message)))
+        _lcErrorHandler(string.format("[LC-Debug][%s] %s", tostring(module), tostring(message)))
     end
 end
 
 function LootCollector._ddebug(module, message)
     if LootCollector.DEBUG_MODE then
-        print(string.format("|cffffff00[LC-DetectDebug|cffff8c00][%s]|r %s", tostring(module), tostring(message)))
+        _lcErrorHandler(string.format("[LC-DetectDebug][%s] %s", tostring(module), tostring(message)))
     end
 end
 
 function LootCollector._cdebug(module, message)
     if LootCollector.db and LootCollector.db.profile and LootCollector.db.profile.cdebugMode then
-        print(string.format("|cffffff00[LC-ChatDebug|cffff8c00][%s]|r %s", tostring(module), tostring(message)))
+        _lcErrorHandler(string.format("[LC-ChatDebug][%s] %s", tostring(module), tostring(message)))
     end
 end
     

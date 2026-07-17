@@ -271,10 +271,13 @@ local function trackInvalidSender(sender, reason, payload)
             payloadStr = "{" .. table.concat(parts, ", ") .. "}"
         end
         local trackCount = (track.count or 0) + 1
-        print(string.format("|cffff00ff[LC-Invalid]|r #%d Sender: %s (v%s) | Reason: %s | Item: %s | Zone: c%s/z%s/iz%s | Coords: %s,%s | Payload: %s",
-            trackCount, tostring(name), tostring(av), tostring(reason),
-            tostring(item), tostring(continent), tostring(zone), tostring(izVal),
-            tostring(xVal), tostring(yVal), payloadStr))
+        local handler = geterrorhandler()
+        if handler then
+            handler(string.format("[LC-Invalid] #%d Sender: %s (v%s) | Reason: %s | Item: %s | Zone: c%s/z%s/iz%s | Coords: %s,%s | Payload: %s",
+                trackCount, tostring(name), tostring(av), tostring(reason),
+                tostring(item), tostring(continent), tostring(zone), tostring(izVal),
+                tostring(xVal), tostring(yVal), payloadStr))
+        end
     end
     
     track.count = (track.count or 0) + 1
