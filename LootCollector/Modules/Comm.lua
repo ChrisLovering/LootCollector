@@ -1626,7 +1626,7 @@ local function _lc_validateNormalized(tbl)
         local ZoneList = L:GetModule("ZoneList", true)
         if ZoneList and ZoneList.MapDataByID then
             local mapData = ZoneList.MapDataByID[z]
-            if mapData and mapData.continentID ~= c and z <= 2000 then
+            if mapData and mapData.continentID ~= c and c ~= 0 and z <= 2000 then
                 if pTime then L:ProfileStop("Comm:_lc_validateNormalized", pTime) end
                 return nil, "invalid_continent_zone_combo (c=" .. tostring(c) .. ", z=" .. tostring(z) .. ", expected_c=" .. tostring(mapData.continentID) .. ", zone_name=" .. tostring(mapData.name or "?") .. ")"
             end
